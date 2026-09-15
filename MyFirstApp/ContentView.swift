@@ -100,27 +100,16 @@ struct ContentView: View {
                                                                     .font(.subheadline)
                                                                     .foregroundColor(.red)
                                                             }
-                                                            
-                                                            // Список
-                                                            List {
-                                                                ForEach(filteredExpenses) { expense in
-                                                                    HStack {
-                                                                        Text("\(expense.category.icon)")
-                                                                        VStack(alignment: .leading) {
-                                                                            Text(expense.name)
-                                                                                .font(.headline)
-                                                                            Text(expense.category.rawValue)
-                                                                                .font(.caption)
-                                                                                .foregroundColor(.gray)
-                                                                        }
-                                                                        Spacer()
-                                                                        Text("$\(String(format: "%.2f", expense.amount))")
-                                                                            .foregroundColor(.gray)
-                                                                    }
-                                                                }
-                                                                .onDelete(perform: deleteExpense)
-                                                            }
-                                                            .listStyle(PlainListStyle())
+                // Список карточек
+                ForEach(filteredExpenses) { expense in
+                    ExpenseCard(expense: expense, onDelete: {
+                        let id = expense.id
+                        expenses.removeAll { $0.id == id }
+                        saveExpenses()
+                    })
+                    .padding(.horizontal)
+                    .padding(.vertical, 4)
+                }
                                                         }
                                                         .padding(.top)
                                                         .navigationTitle("Трекер")
