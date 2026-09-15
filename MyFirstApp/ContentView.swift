@@ -1,18 +1,30 @@
 import SwiftUI
 
+// Структура для одного расхода (название + сумма)
+struct Expense: Identifiable, Codable {
+    var id = UUID()
+    var name: String
+    var amount: Double
+}
+
 struct ContentView: View {
-    @State private var totalExpenses: Double = 0.0
     @State private var expenseName: String = ""
     @State private var expenseAmount: String = ""
-    @State private var expenses: [String] = []
+    @State private var expenses: [Expense] = []
+    
+    // Общая сумма всех расходов
+    var total: Double {
+        expenses.reduce(0) { $0 + $1.amount }
+    }
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 20) {
+            VStack(spacing: 16) {
                 Text("💰 Мои расходы")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
+                // Поля для ввода
                 TextField("Название (например: Кофе)", text: $expenseName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
@@ -22,6 +34,7 @@ struct ContentView: View {
                     .keyboardType(.decimalPad)
                     .padding(.horizontal)
                 
+                // Кнопка "Добавить"
                 Button(action: addExpense) {
                     Text("➕ Добавить расход")
                         .font(.headline)
@@ -33,31 +46,74 @@ struct ContentView: View {
                 }
                 .padding(.horizontal)
                 
-                Text("Итого: $\(String(format: "%.2f", totalExpenses))")
+                // Итого
+                Text("Итого: $\(String(format: "%.2f", total))")
                     .font(.title)
                     .fontWeight(.semibold)
-                    .padding()
                 
-                List(expenses, id: \.self) { expense in
-                    Text(expense)
+                // Кнопка "Очистить всё"
+                Button(action: clearAll) {
+                    Text("🗑 Очистить всё")
+                        .font(.subheadline)
+                        .foregroundColor(.red)
+                }
+                .padding(.top, 4)
+                
+                // Список расходов
+                List {
+                    ForEach(expenses) { expense in
+                        HStack {
+                            Text(expense.name)
+                            Spacer()
+                            Text("$\(String(format: "%.2f", expense.amount))")
+                                .foregroundColor(.gray)
+                        }
+                    }
+                    .onDelete(perform: deleteExpense)
                 }
                 .listStyle(PlainListStyle())
-                
-                Spacer()
             }
-            .padding()
+            .padding(.top)
             .navigationTitle("Трекер")
+            .onAppear(perform: loadExpenses)
         }
     }
     
+    // Добавить расход
     func addExpense() {
-        guard let amount = Double(expenseAmount), !expenseName.isEmpty else {
-            return
-        }
-        totalExpenses += amount
-        expenses.append("\(expenseName): $\(String(format: "%.2f", amount))")
+        guard let amount = Double(expenseAmount), !expenseName.isEmpty else { return }
+        let newExpense = Expense(name: expenseName, amount: amount)
+        expenses.append(newExpense)
         expenseName = ""
         expenseAmount = ""
+        saveExpenses()
+    }
+    
+    // Удалить расход смахиванием
+    func deleteExpense(at offsets: IndexSet) {
+        expenses.remove(atOffsets: offsets)
+        saveExpenses()
+    }
+    
+    // Очистить всё
+    func clearAll() {
+        expenses.removeAll()
+        saveExpenses()
+    }
+    
+    // СОХРАНЕНИЕ данных в UserDefaults
+    func saveExpenses() {
+        if let encoded = try? JSONEncoder().encode(expenses) {
+            UserDefaults.standard.set(encoded, forKey: "savedExpenses")
+        }
+    }
+    
+    // ЗАГРУЗКА данных из UserDefaults
+    func loadExpenses() {
+        if let data = UserDefaults.standard.data(forKey: "savedExpenses"),
+           let decoded = try? JSONDecoder().decode([Expense].self, from: data) {
+            expenses = decoded
+        }
     }
 }
 
