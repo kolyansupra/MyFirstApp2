@@ -1,40 +1,93 @@
 import SwiftUI
 
-// Структура для одного расхода (название + сумма)
+// Категории расходов
+enum Category: String, CaseIterable, Codable, Identifiable {
+    case food = "Еда"
+    case transport = "Транспорт"
+    case housing = "Жильё"
+    case fun = "Развлечения"
+    case other = "Другое"
+    
+    var id: String { self.rawValue }
+    
+    var icon: String {
+        switch self {
+        case .food: return "🍔"
+        case .transport: return "🚗"
+        case .housing: return "🏠"
+        case .fun: return "🎉"
+        case .other: return "📦"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .food: return .orange
+        case .transport: return .blue
+        case .housing: return .green
+        case .fun: return .purple
+        case .other: return .gray
+        }
+    }
+}
+
+// Структура расхода
 struct Expense: Identifiable, Codable {
     var id = UUID()
     var name: String
     var amount: Double
+    var category: Category
 }
 
 struct ContentView: View {
     @State private var expenseName: String = ""
     @State private var expenseAmount: String = ""
+    @State private var selectedCategory: Category = .food
     @State private var expenses: [Expense] = []
+    @State private var filterCategory: Category? = nil // nil = показывать все
     
-    // Общая сумма всех расходов
+    // Отфильтрованные расходы
+    var filteredExpenses: [Expense] {
+        if let filter = filterCategory {
+            return expenses.filter { $0.category == filter }
+        } else {
+            return expenses
+        }
+    }
+    
+    // Общая сумма (по фильтру)
     var total: Double {
-        expenses.reduce(0) { $0 + $1.amount }
+        filteredExpenses.reduce(0) { $0 + $1.amount }
     }
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 16) {
+            VStack(spacing: 14) {
                 Text("💰 Мои расходы")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 
-                // Поля для ввода
+                // Название
                 TextField("Название (например: Кофе)", text: $expenseName)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
                 
+                // Сумма
                 TextField("Сумма (например: 2.50)", text: $expenseAmount)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .keyboardType(.decimalPad)
                     .padding(.horizontal)
                 
-                // Кнопка "Добавить"
+                // Выбор категории
+                Picker("Категория", selection: $selectedCategory) {
+                    ForEach(Category.allCases) { cat in
+                        Text("\(cat.icon) \(cat.rawValue)").tag(cat)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                
+                // Кнопка добавить
                 Button(action: addExpense) {
                     Text("➕ Добавить расход")
                         .font(.headline)
@@ -46,77 +99,105 @@ struct ContentView: View {
                 }
                 .padding(.horizontal)
                 
-                // Итого
-                Text("Итого: $\(String(format: "%.2f", total))")
-                    .font(.title)
-                    .fontWeight(.semibold)
-                
-                // Кнопка "Очистить всё"
-                Button(action: clearAll) {
-                    Text("🗑 Очистить всё")
-                        .font(.subheadline)
-                        .foregroundColor(.red)
-                }
-                .padding(.top, 4)
-                
-                // Список расходов
-                List {
-                    ForEach(expenses) { expense in
-                        HStack {
-                            Text(expense.name)
-                            Spacer()
-                            Text("$\(String(format: "%.2f", expense.amount))")
-                                .foregroundColor(.gray)
-                        }
-                    }
-                    .onDelete(perform: deleteExpense)
-                }
-                .listStyle(PlainListStyle())
-            }
-            .padding(.top)
-            .navigationTitle("Трекер")
-            .onAppear(perform: loadExpenses)
-        }
-    }
-    
-    // Добавить расход
-    func addExpense() {
-        guard let amount = Double(expenseAmount), !expenseName.isEmpty else { return }
-        let newExpense = Expense(name: expenseName, amount: amount)
-        expenses.append(newExpense)
-        expenseName = ""
-        expenseAmount = ""
-        saveExpenses()
-    }
-    
-    // Удалить расход смахиванием
-    func deleteExpense(at offsets: IndexSet) {
-        expenses.remove(atOffsets: offsets)
-        saveExpenses()
-    }
-    
-    // Очистить всё
-    func clearAll() {
-        expenses.removeAll()
-        saveExpenses()
-    }
-    
-    // СОХРАНЕНИЕ данных в UserDefaults
-    func saveExpenses() {
-        if let encoded = try? JSONEncoder().encode(expenses) {
-            UserDefaults.standard.set(encoded, forKey: "savedExpenses")
-        }
-    }
-    
-    // ЗАГРУЗКА данных из UserDefaults
-    func loadExpenses() {
-        if let data = UserDefaults.standard.data(forKey: "savedExpenses"),
-           let decoded = try? JSONDecoder().decode([Expense].self, from: data) {
-            expenses = decoded
-        }
-    }
-}
+                // Фильтр по категориям
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        Button("Все") { filterCategory = nil }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(filterCategory == nil ? Color.blue : Color.gray.opacity(0.2))
+                            .foregroundColor(filterCategory == nil ? .white : .primary)
+                            .cornerRadius(8)
+                        
+                        ForEach(Category.allCases) { cat in
+                            Button("\(cat.icon) \(cat.rawValue)") {
+                                filterCategory = cat
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(filterCategory == cat ? cat.color :
+                                            Color.gray.opacity(0.2))
+                                                                        .foregroundColor(filterCategory == cat ? .white : .primary)
+                                                                        .cornerRadius(8)
+                                                                    }
+                                                                }
+                                                                .padding(.horizontal)
+                                                            }
+                                                            
+                                                            // Итого
+                                                            Text("Итого: $\(String(format: "%.2f", total))")
+                                                                .font(.title)
+                                                                .fontWeight(.semibold)
+                                                            
+                                                            // Кнопка очистки
+                                                            Button(action: clearAll) {
+                                                                Text("🗑 Очистить всё")
+                                                                    .font(.subheadline)
+                                                                    .foregroundColor(.red)
+                                                            }
+                                                            
+                                                            // Список
+                                                            List {
+                                                                ForEach(filteredExpenses) { expense in
+                                                                    HStack {
+                                                                        Text("\(expense.category.icon)")
+                                                                        VStack(alignment: .leading) {
+                                                                            Text(expense.name)
+                                                                                .font(.headline)
+                                                                            Text(expense.category.rawValue)
+                                                                                .font(.caption)
+                                                                                .foregroundColor(.gray)
+                                                                        }
+                                                                        Spacer()
+                                                                        Text("$\(String(format: "%.2f", expense.amount))")
+                                                                            .foregroundColor(.gray)
+                                                                    }
+                                                                }
+                                                                .onDelete(perform: deleteExpense)
+                                                            }
+                                                            .listStyle(PlainListStyle())
+                                                        }
+                                                        .padding(.top)
+                                                        .navigationTitle("Трекер")
+                                                        .onAppear(perform: loadExpenses)
+                                                    }
+                                                }
+                                                
+                                                func addExpense() {
+                                                    guard let amount = Double(expenseAmount), !expenseName.isEmpty else { return }
+                                                    let newExpense = Expense(name: expenseName, amount: amount, category: selectedCategory)
+                                                    expenses.append(newExpense)
+                                                    expenseName = ""
+                                                    expenseAmount = ""
+                                                    saveExpenses()
+                                                }
+                                                
+                                                func deleteExpense(at offsets: IndexSet) {
+                                                    // Учитываем фильтр: удаляем по правильному индексу
+                                                    let indicesToRemove = offsets.map { filteredExpenses[$0].id }
+                                                    expenses.removeAll { indicesToRemove.contains($0.id) }
+                                                    saveExpenses()
+                                                }
+                                                
+                                                func clearAll() {
+                                                    expenses.removeAll()
+                                                    saveExpenses()
+                                                }
+                                                
+                                                func saveExpenses() {
+                                                    if let encoded = try? JSONEncoder().encode(expenses) {
+                                                        UserDefaults.standard.set(encoded, forKey: "savedExpenses")
+                                                    }
+                                                }
+                                                
+                                                func loadExpenses() {
+                                                    if let data = UserDefaults.standard.data(forKey: "savedExpenses"),
+                                                       let decoded = try? JSONDecoder().decode([Expense].self, from: data) {
+                                                        expenses = decoded
+                                                    }
+                                                }
+                                            }
 
-#Preview {
-    ContentView()
-}
+                                            #Preview {
+                                                ContentView()
+                                            }
