@@ -1,43 +1,8 @@
 import SwiftUI
 
 // Категории расходов
-enum Category: String, CaseIterable, Codable, Identifiable {
-    case food = "Еда"
-    case transport = "Транспорт"
-    case housing = "Жильё"
-    case fun = "Развлечения"
-    case other = "Другое"
-    
-    var id: String { self.rawValue }
-    
-    var icon: String {
-        switch self {
-        case .food: return "🍔"
-        case .transport: return "🚗"
-        case .housing: return "🏠"
-        case .fun: return "🎉"
-        case .other: return "📦"
-        }
-    }
-    
-    var color: Color {
-        switch self {
-        case .food: return .orange
-        case .transport: return .blue
-        case .housing: return .green
-        case .fun: return .purple
-        case .other: return .gray
-        }
-    }
-}
 
 // Структура расхода
-struct Expense: Identifiable, Codable {
-    var id = UUID()
-    var name: String
-    var amount: Double
-    var category: Category
-}
 
 struct ContentView: View {
     @State private var expenseName: String = ""
@@ -62,103 +27,97 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            VStack(spacing: 14) {
-                Text("💰 Мои расходы")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                // Название
-                TextField("Название (например: Кофе)", text: $expenseName)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
+            ScrollView {
+                VStack(spacing: 14) {
+                    Text("💰 Мои расходы")
+                        .font(.largeTitle)
+                        .fontWeight(.bold)
+                    
+                    // Название
+                    TextField("Название (например: Кофе)", text: $expenseName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal)
+                    
+                    // Сумма
+                    TextField("Сумма (например: 2.50)", text: $expenseAmount)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .keyboardType(.decimalPad)
+                        .padding(.horizontal)
+                    
+                    // Выбор категории
+                    Picker("Категория", selection: $selectedCategory) {
+                        ForEach(Category.allCases) { cat in
+                            Text("\(cat.icon) \(cat.rawValue)").tag(cat)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                     .padding(.horizontal)
-                
-                // Сумма
-                TextField("Сумма (например: 2.50)", text: $expenseAmount)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .keyboardType(.decimalPad)
+                    
+                    // Кнопка добавить
+                    Button(action: addExpense) {
+                        Text("➕ Добавить расход")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue)
+                            .cornerRadius(10)
+                    }
                     .padding(.horizontal)
-                
-                // Выбор категории
-                Picker("Категория", selection: $selectedCategory) {
-                    ForEach(Category.allCases) { cat in
-                        Text("\(cat.icon) \(cat.rawValue)").tag(cat)
+                    
+                    // Фильтр по категориям
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            Button("Все") { filterCategory = nil }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(filterCategory == nil ? Color.blue : Color.gray.opacity(0.2))
+                                .foregroundColor(filterCategory == nil ? .white : .primary)
+                                .cornerRadius(8)
+                            
+                            ForEach(Category.allCases) { cat in
+                                Button("\(cat.icon) \(cat.rawValue)") {
+                                    filterCategory = cat
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(filterCategory == cat ? cat.color :
+                                                Color.gray.opacity(0.2))
+                                .foregroundColor(filterCategory == cat ? .white : .primary)
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // Итого
+                    Text("Итого: $\(String(format: "%.2f", total))")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                    
+                    // Кнопка очистки
+                    Button(action: clearAll) {
+                        Text("🗑 Очистить всё")
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                    
+                    // Диаграмма расходов по категориям
+                    ChartView(expenses: expenses)
+                    
+                    // Список карточек
+                    ForEach(filteredExpenses) { expense in
+                        ExpenseCard(expense: expense, onDelete: {
+                            let id = expense.id
+                            expenses.removeAll { $0.id == id }
+                            saveExpenses()
+                        })
+                        .padding(.horizontal)
+                        .padding(.vertical, 4)
                     }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-                
-                // Кнопка добавить
-                Button(action: addExpense) {
-                    Text("➕ Добавить расход")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                }
-                .padding(.horizontal)
-                
-                // Фильтр по категориям
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        Button("Все") { filterCategory = nil }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(filterCategory == nil ? Color.blue : Color.gray.opacity(0.2))
-                            .foregroundColor(filterCategory == nil ? .white : .primary)
-                            .cornerRadius(8)
-                        
-                        ForEach(Category.allCases) { cat in
-                            Button("\(cat.icon) \(cat.rawValue)") {
-                                filterCategory = cat
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(filterCategory == cat ? cat.color :
-                                            Color.gray.opacity(0.2))
-                                                                        .foregroundColor(filterCategory == cat ? .white : .primary)
-                                                                        .cornerRadius(8)
-                                                                    }
-                                                                }
-                                                                .padding(.horizontal)
-                                                            }
-                                                            
-                                                            // Итого
-                                                            Text("Итого: $\(String(format: "%.2f", total))")
-                                                                .font(.title)
-                                                                .fontWeight(.semibold)
-                                                            
-                                                            // Кнопка очистки
-                                                            Button(action: clearAll) {
-                                                                Text("🗑 Очистить всё")
-                                                                    .font(.subheadline)
-                                                                    .foregroundColor(.red)
-                                                            }
-                                                            
-                                                            // Список
-                                                            List {
-                                                                ForEach(filteredExpenses) { expense in
-                                                                    HStack {
-                                                                        Text("\(expense.category.icon)")
-                                                                        VStack(alignment: .leading) {
-                                                                            Text(expense.name)
-                                                                                .font(.headline)
-                                                                            Text(expense.category.rawValue)
-                                                                                .font(.caption)
-                                                                                .foregroundColor(.gray)
-                                                                        }
-                                                                        Spacer()
-                                                                        Text("$\(String(format: "%.2f", expense.amount))")
-                                                                            .foregroundColor(.gray)
-                                                                    }
-                                                                }
-                                                                .onDelete(perform: deleteExpense)
-                                                            }
-                                                            .listStyle(PlainListStyle())
-                                                        }
-                                                        .padding(.top)
-                                                        .navigationTitle("Трекер")
+                .padding(.top)
+            }           .navigationTitle("Трекер")
                                                         .onAppear(perform: loadExpenses)
                                                     }
                                                 }
