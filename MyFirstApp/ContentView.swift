@@ -11,13 +11,14 @@ struct ContentView: View {
     @State private var expenses: [Expense] = []
     @State private var filterCategory: Category? = nil // nil = показывать все
     @State private var editingExpense: Expense? = nil
+    @State private var dateFilter: DateFilter = .all
     
     // Отфильтрованные расходы
     var filteredExpenses: [Expense] {
-        if let filter = filterCategory {
-            return expenses.filter { $0.category == filter }
-        } else {
-            return expenses
+        expenses.filter { expense in
+            let categoryMatch = filterCategory == nil || expense.category == filterCategory
+            let dateMatch = dateFilter.matches(expense.date)
+            return categoryMatch && dateMatch
         }
     }
     
@@ -85,6 +86,23 @@ struct ContentView: View {
                                 .background(filterCategory == cat ? cat.color :
                                                 Color.gray.opacity(0.2))
                                 .foregroundColor(filterCategory == cat ? .white : .primary)
+                                .cornerRadius(8)
+                            }
+                        }
+                        .padding(.horizontal)
+                    }
+                    
+                    // Фильтр по датам
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack {
+                            ForEach(DateFilter.allCases) { filter in
+                                Button(filter.rawValue) {
+                                    dateFilter = filter
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(dateFilter == filter ? Color.green : Color(.tertiarySystemFill))
+                                .foregroundColor(dateFilter == filter ? .white : .primary)
                                 .cornerRadius(8)
                             }
                         }
