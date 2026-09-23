@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var selectedCategory: Category = .food
     @State private var expenses: [Expense] = []
     @State private var filterCategory: Category? = nil // nil = показывать все
+    @State private var editingExpense: Expense? = nil
     
     // Отфильтрованные расходы
     var filteredExpenses: [Expense] {
@@ -112,12 +113,23 @@ struct ContentView: View {
                             expenses.removeAll { $0.id == id }
                             saveExpenses()
                         })
+                        .onTapGesture {
+                            editingExpense = expense
+                        }
                         .padding(.horizontal)
                         .padding(.vertical, 4)
                     }
                 }
                 .padding(.top)
             }           .navigationTitle("Трекер")
+                .sheet(item: $editingExpense) { expense in
+                    EditExpenseView(expense: expense) { updated in
+                        if let index = expenses.firstIndex(where: { $0.id == updated.id }) {
+                            expenses[index] = updated
+                            saveExpenses()
+                        }
+                    }
+                }
                                                         .onAppear(perform: loadExpenses)
                                                     }
                                                 }
