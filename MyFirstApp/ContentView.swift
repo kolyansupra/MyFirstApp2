@@ -12,6 +12,8 @@ struct ContentView: View {
     @State private var filterCategory: Category? = nil // nil = показывать все
     @State private var editingExpense: Expense? = nil
     @State private var dateFilter: DateFilter = .all
+    @State private var showingShareSheet = false
+    @State private var csvFileURL: URL? = nil
     
     // Отфильтрованные расходы
     var filteredExpenses: [Expense] {
@@ -120,6 +122,12 @@ struct ContentView: View {
                             .font(.subheadline)
                             .foregroundColor(.red)
                     }
+                    // Кнопка экспорта
+                    Button(action: exportCSV) {
+                        Text("📤 Экспорт в CSV")
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
                     
                     // Диаграмма расходов по категориям
                     ChartView(expenses: expenses)
@@ -148,6 +156,11 @@ struct ContentView: View {
                         }
                     }
                 }
+                .sheet(isPresented: $showingShareSheet) {
+                    if let url = csvFileURL {
+                        ShareSheet(items: [url])
+                    }
+                }
                                                         .onAppear(perform: loadExpenses)
                                                     }
                                                 }
@@ -172,6 +185,13 @@ struct ContentView: View {
                                                     expenses.removeAll()
                                                     saveExpenses()
                                                 }
+    func exportCSV() {
+        let csv = ExportHelper.makeCSV(from: expenses)
+        if let url = ExportHelper.saveToTemporaryFile(csv: csv) {
+            csvFileURL = url
+            showingShareSheet = true
+        }
+    }
                                                 
                                                 func saveExpenses() {
                                                     if let encoded = try? JSONEncoder().encode(expenses) {
