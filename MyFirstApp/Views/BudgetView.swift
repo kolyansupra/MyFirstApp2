@@ -49,6 +49,7 @@ struct BudgetView: View {
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(Color(.tertiarySystemFill))
                                 .frame(height: 14)
+                                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: progress)
                             
                             RoundedRectangle(cornerRadius: 8)
                                 .fill(progressColor)

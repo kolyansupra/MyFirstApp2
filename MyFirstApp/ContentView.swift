@@ -73,7 +73,11 @@ struct ContentView: View {
                     // Фильтр по категориям
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack {
-                            Button("Все") { filterCategory = nil }
+                            Button("Все") {
+                                withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                    filterCategory = nil
+                                }
+                            }
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 6)
                                 .background(filterCategory == nil ? Color.blue : Color.gray.opacity(0.2))
@@ -100,7 +104,9 @@ struct ContentView: View {
                         HStack {
                             ForEach(DateFilter.allCases) { filter in
                                 Button(filter.rawValue) {
-                                    dateFilter = filter
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
+                                        dateFilter = filter
+                                    }
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -138,9 +144,11 @@ struct ContentView: View {
                     // Список карточек
                     ForEach(filteredExpenses) { expense in
                         ExpenseCard(expense: expense, onDelete: {
-                            let id = expense.id
-                            expenses.removeAll { $0.id == id }
-                            saveExpenses()
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                let id = expense.id
+                                expenses.removeAll { $0.id == id }
+                                saveExpenses()
+                            }
                         })
                         .onTapGesture {
                             editingExpense = expense
@@ -182,14 +190,18 @@ struct ContentView: View {
                                                     }
                                                 }
                                                 
-                                                func addExpense() {
-                                                    guard let amount = Double(expenseAmount), !expenseName.isEmpty else { return }
-                                                    let newExpense = Expense(name: expenseName, amount: amount, category: selectedCategory)
-                                                    expenses.append(newExpense)
-                                                    expenseName = ""
-                                                    expenseAmount = ""
-                                                    saveExpenses()
-                                                }
+    func addExpense() {
+        guard let amount = Double(expenseAmount), !expenseName.isEmpty else { return }
+        let newExpense = Expense(name: expenseName, amount: amount, category: selectedCategory)
+        
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+            expenses.append(newExpense)
+        }
+        
+        expenseName = ""
+        expenseAmount = ""
+        saveExpenses()
+    }
                                                 
                                                 func deleteExpense(at offsets: IndexSet) {
                                                     // Учитываем фильтр: удаляем по правильному индексу
