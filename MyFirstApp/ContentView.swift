@@ -150,7 +150,21 @@ struct ContentView: View {
                     }
                 }
                 .padding(.top)
-            }           .navigationTitle("Трекер")
+            }
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(.systemBackground),
+                        Color.blue.opacity(0.15),
+                        Color.purple.opacity(0.1),
+                        Color(.systemBackground)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+            )
+            .navigationTitle("Трекер")
                 .sheet(item: $editingExpense) { expense in
                     EditExpenseView(expense: expense) { updated in
                         if let index = expenses.firstIndex(where: { $0.id == updated.id }) {
