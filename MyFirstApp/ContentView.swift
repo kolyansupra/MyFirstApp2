@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var dateFilter: DateFilter = .all
     @State private var showingShareSheet = false
     @State private var csvFileURL: URL? = nil
+    @State private var monthlyBudget: Double = UserDefaults.standard.double(forKey: "monthlyBudget")
     
     // Отфильтрованные расходы
     var filteredExpenses: [Expense] {
@@ -131,6 +132,8 @@ struct ContentView: View {
                     
                     // Диаграмма расходов по категориям
                     ChartView(expenses: expenses)
+                    // Бюджет на месяц
+                    BudgetView(monthlyBudget: $monthlyBudget, totalSpent: total)
                     
                     // Список карточек
                     ForEach(filteredExpenses) { expense in
