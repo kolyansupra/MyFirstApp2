@@ -33,24 +33,58 @@ struct ContentView: View {
                         .fontWeight(.bold)
 
                     // Форма ввода
-                    VStack(spacing: 10) {
-                        TextField("Название (например: Кофе)", text: $expenseName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    VStack(spacing: 12) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "text.alignleft")
+                                .foregroundColor(.blue)
+                                .frame(width: 20)
+                            TextField("Название (например: Кофе)", text: $expenseName)
+                                .textFieldStyle(.plain)
+                        }
+                        .padding(12)
+                        .background(Color(.tertiarySystemFill))
+                        .cornerRadius(10)
 
-                        TextField("Сумма (например: 2.50)", text: $expenseAmount)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .keyboardType(.decimalPad)
+                        HStack(spacing: 10) {
+                            Image(systemName: "dollarsign.circle")
+                                .foregroundColor(.green)
+                                .frame(width: 20)
+                            TextField("Сумма (например: 2.50)", text: $expenseAmount)
+                                .textFieldStyle(.plain)
+                                .keyboardType(.decimalPad)
+                        }
+                        .padding(12)
+                        .background(Color(.tertiarySystemFill))
+                        .cornerRadius(10)
 
-                        Picker("Категория", selection: $selectedCategory) {
-                            ForEach(Category.allCases) { cat in
-                                Text("\(cat.icon) \(cat.rawValue)").tag(cat)
+                        // Горизонтальный Picker категорий
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(Category.allCases) { cat in
+                                    Button {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            selectedCategory = cat
+                                        }
+                                    } label: {
+                                        HStack(spacing: 6) {
+                                            Text(cat.icon)
+                                            Text(cat.rawValue)
+                                                .font(.subheadline)
+                                                .fontWeight(.medium)
+                                        }
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(selectedCategory == cat ? cat.color : Color(.tertiarySystemFill))
+                                        .foregroundColor(selectedCategory == cat ? .white : .primary)
+                                        .cornerRadius(10)
+                                    }
+                                }
                             }
                         }
-                        .pickerStyle(.segmented)
                     }
                     .padding()
                     .background(Color(.secondarySystemBackground))
-                    .cornerRadius(12)
+                    .cornerRadius(14)
                     .padding(.horizontal)
 
                     // Кнопка добавить
