@@ -35,6 +35,8 @@ struct ChartView: View {
                     }
                 }
                 .frame(height: 200)
+                .transition(.scale.combined(with: .opacity))
+                .animation(.spring(response: 0.6, dampingFraction: 0.8), value: chartData.count)
                 .padding()
             }
             .background(Color(.secondarySystemBackground))
