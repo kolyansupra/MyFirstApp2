@@ -48,7 +48,7 @@ struct Expense: Identifiable, Codable {
 
 enum DateFilter: String, CaseIterable, Identifiable {
     case all = "Все"
-    case today = "Сегодня"
+    case today = "День"
     case week = "Неделя"
     case month = "Месяц"
     
